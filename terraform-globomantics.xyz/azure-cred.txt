@@ -1,7 +1,0 @@
-arm_subscription_id = "4f73abc9-24a7-4675-ae12-f56cf9febdd2"
-
-arm_principal = "1d1c9772-0ff0-4efc-95e3-ef71557e716d"
-
-arm_password = "ATZBmU4gWmBYI.E-4tFlumkq_eSYCR~ec4"
-
-tenant_id = "76458ff0-c93e-4969-842e-d86fd977aafe"

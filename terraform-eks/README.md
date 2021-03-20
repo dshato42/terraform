@@ -15,20 +15,19 @@
 ## CREATE ECR repository
 
 Create ecr (Elastic container registry)
-    * provision using Terraform see [a relative link] ecr-terrafrom.tf
-    * can be created using aws cli using the following commands.
-        aws ecr create-repository --repository-name [REPOSITORY NAME]
+    1. provision using Terraform see [ecr-terrafrom.tf] .
+    2. can be created using aws cli using the following commands.
+        `aws ecr create-repository --repository-name [REPOSITORY NAME]`
 
 
 ## Create AWS EKS cluster
 Provision EKS Cluster
-    * Can be created using the aws cli with the following command.
-        aws create cluster\
+    1. Can be created using the aws cli with the following command.
+        ```aws create cluster\
         --name [Name of the cluster]\
         --region [AWS Region Name]\
         --zones [Aws Availability Zones]\
         --node-type [AWS Node Type]\
         --node-min [Min number of nodes]
-        --node-max [Max number of nodes]
-
-    * provision using Terraform see [a relative link] aws-eks.tf
+        --node-max [Max number of nodes]```
+    2. provision using Terraform see [aws-eks.tf] 

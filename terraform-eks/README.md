@@ -10,18 +10,23 @@
  * kubectl. see link https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
  * eksctl. see link https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html
 
+[I'm a relative reference to a repository file](../blob/master/LICENSE)
 
 
 ## CREATE ECR repository
 
-1. Create ecr (Elastic container registry)
-    * provision using Terraform see [a relative link] ecr-terrafrom.tf
-    * can be created using aws cli using the following commands.
-        aws ecr create-repository --repository-name [REPOSITORY NAME]
+Create ecr (Elastic container registry)
+    
+    1. provision using Terraform see ecr-terrafrom.tf
+    
+    2. can be created using aws cli using the following commands.
+        `aws ecr create-repository --repository-name [REPOSITORY NAME]`
 
 
-2. Provision EKS Cluster
-    * Can be created using the aws cli with the following command.
+## Create AWS EKS cluster
+Provision EKS Cluster
+    
+    1. Can be created using the aws cli with the following command.
         aws create cluster\
         --name [Name of the cluster]\
         --region [AWS Region Name]\
@@ -29,5 +34,5 @@
         --node-type [AWS Node Type]\
         --node-min [Min number of nodes]
         --node-max [Max number of nodes]
-
-    * provision using Terraform see [a relative link] aws-eks.tf
+    
+    2. provision using Terraform see aws-eks.tf

@@ -17,7 +17,8 @@
 
 Create ecr (Elastic container registry)
     
-    1. provision using Terraform see [ecr terraform file] ecr-terrafrom.tf.
+    1. provision using Terraform see 
+    [ecr terraform file](./ecr-terrafrom.tf)
     
     2. can be created using aws cli using the following commands.
         `aws ecr create-repository --repository-name [REPOSITORY NAME]`

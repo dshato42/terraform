@@ -10,6 +10,7 @@
  * kubectl. see link https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
  * eksctl. see link https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html
 
+[I'm a relative reference to a repository file](../blob/master/LICENSE)
 
 
 ## CREATE ECR repository

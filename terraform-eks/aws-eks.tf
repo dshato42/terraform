@@ -3,8 +3,6 @@
 ##########################
 
 
-
-
 variable "region" {
   type = string
   description = "the region to deploy the cluster"
@@ -13,6 +11,11 @@ variable "region" {
 variable "env_name" {
   type = string
   description = "The environment name"
+}
+
+variable "key_name" {
+  type = string
+  description = "the name of the ssh key to attachat to the worker nodes"
 }
 
 provider "aws" {
@@ -25,6 +28,74 @@ data "aws_availability_zones" "azs" {}
 
 locals {
   cluster_name = "${var.env_name}-cluster"
+  repository_name = "${var.env_name}-repository"
+}
+
+
+/* Roles
+    create role policies to attach to the services.
+    eks-iam-role - specific role for the EKS cluster usage.
+    ng-iam-role - specific role for the node group.
+*/
+
+# resource "aws_iam_role" "eks-iam-role" {
+#   name = "${var.env_name}-eks-iam-role"
+
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Action = "sts:AssumeRole"
+#         Effect = "Allow"
+#         Sid    = ""
+#         Principal = {
+#           Service = "eks.amazonaws.com"
+#         }
+#       }
+#     ]
+#   })
+# }
+
+# resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
+#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+#   role       = aws_iam_role.eks-iam-role.name
+# }
+# resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSServicePolicy" {
+#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+#   role       = aws_iam_role.eks-iam-role.name
+# }
+
+resource "aws_iam_role" "ng-iam-role" {
+  name = "${var.env_name}-eks-iam-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ng_ecr_readOnly" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.ng-iam-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ng_cni_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.ng-iam-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ng_eks_worker_group_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = aws_iam_role.ng-iam-role.name
 }
 
 
@@ -68,34 +139,49 @@ module "vpc" {
     }
 }
 
-# resource "aws_security_group" "worker-sg" {
-#   name   = "worker-sg"
-#   vpc_id = module.vpc.vpc_id
+resource "aws_security_group" "worker-sg" {
+  name   = "nginx-sg"
+  vpc_id = module.vpc.vpc_id
 
-#   ingress {
-#     cidr_blocks = ["176.229.229.247/24"]
-#     description = "Inbound access to ssh port 22 to all"
-#     from_port   = 22
-#     protocol    = "tcp"
-#     to_port     = 22
-#   }
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Inbound access to ssh port 22 to all"
+    from_port   = 22
+    protocol    = "tcp"
+    to_port     = 22
+  }
 
-#   ingress {
-#     cidr_blocks = ["10.0.0.0/16"]
-#     description = "Inbound access to http port 80 only from internal vpc via ELB"
-#     from_port   = 80
-#     protocol    = "tcp"
-#     to_port     = 80
-#   }
+  ingress {
+    cidr_blocks = ["10.0.0.0/16"]
+    description = "Inbound access to http port 80 only from internal vpc via ELB"
+    from_port   = 80
+    protocol    = "tcp"
+    to_port     = 80
+  }
 
-#   egress {
-#     cidr_blocks = ["0.0.0.0/0"]
-#     description = "outbound to all"
-#     from_port   = 0
-#     protocol    = "-1"
-#     to_port     = 0
-#   }
-# }
+  egress {
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "outbound to all"
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
+  }
+}
+
+
+
+resource "aws_ecr_repository" "ecr-repo" {
+  name                 = local.repository_name
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    "Name" = "aws_ecr-sela"
+  }
+}
 
 /*
   COMPUTE
@@ -114,6 +200,7 @@ module "eks" {
   cluster_version = "1.18"
   subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
+  # role_arn        = aws_iam_role.eks-iam-role.arn
   # worker_additional_security_group_ids = [aws_security_group.worker-sg.id]
   workers_group_defaults = {
     root_volume_type = "gp2"
@@ -122,9 +209,13 @@ module "eks" {
   worker_groups = [
     {
       instance_type = "t2.micro"
-      asg_desired_capacity  = 1
+      asg_desired_capacity  = 2
       asg_max_size          = 3
-      asg_min_size          = 1
+      asg_min_size          = 2
+      subnets = module.vpc.private_subnets
+      iam_role_arn = aws_iam_role.ng-iam-role.arn
+      key_name = var.key_name
+
     }
   ]
 }
@@ -147,22 +238,18 @@ provider "kubernetes" {
 # save the kube config file in kube/config file
 resource "local_file" "kubeconfig" {
     content     = module.eks.kubeconfig
-    filename = "~/.kube/config"
+    filename = "config"
     depends_on = [module.eks]
-}
-
-# echot the nodes status
-resource "null_resource" "example1" {
-  provisioner "local-exec" {
-    command = "kubectl get nodes -owide"
-  }
-  depends_on = [local_file.kubeconfig]
 }
 
 # outputing the kube config content to the screen at the end of the provisioning
 output "kubectl_config" {
   description = "kubectl config that can be used to authenticate with the cluster"
   value       = module.eks.kubeconfig
+}
+
+output "aws_ecr_registry_uri" {
+  value = aws_ecr_repository.ecr-repo.repository_url
 }
 
 

@@ -3,31 +3,11 @@
 ##########################
 
 
-
-
-variable "region" {
-  type = string
-  description = "the region to deploy the cluster"
-}
-
-variable "env_name" {
-  type = string
-  description = "The environment name"
-}
-
-provider "aws" {
-  profile = "default"
-  region  = var.region
-}
-
-
 data "aws_availability_zones" "azs" {}
 
 locals {
   cluster_name = "${var.env_name}-cluster"
 }
-
-
 /*
 NETWORKING
   create vpc using vpc module
@@ -144,11 +124,17 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
+resource "null_resource" "create-kube-folder" {
+  provisioner "local-exec" {
+    command = "kubectl get nodes -owide"
+  }
+  depends_on = [module.eks]
+}
 # save the kube config file in kube/config file
 resource "local_file" "kubeconfig" {
     content     = module.eks.kubeconfig
     filename = "~/.kube/config"
-    depends_on = [module.eks]
+    depends_on = [null_resource.create-kube-folder]
 }
 
 # echot the nodes status

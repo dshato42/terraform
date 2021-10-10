@@ -3,26 +3,6 @@
 ##########################
 
 
-variable "region" {
-  type = string
-  description = "the region to deploy the cluster"
-}
-
-variable "env_name" {
-  type = string
-  description = "The environment name"
-}
-
-variable "key_name" {
-  type = string
-  description = "the name of the ssh key to attachat to the worker nodes"
-}
-
-provider "aws" {
-  profile = "default"
-  region  = var.region
-}
-
 
 data "aws_availability_zones" "azs" {}
 
@@ -110,7 +90,6 @@ NETWORKING
 */
 module "vpc" {
     source = "terraform-aws-modules/vpc/aws"
-    version = "2.15.0"
     
     name = "${var.env_name}-vpc"
 
@@ -182,7 +161,7 @@ resource "aws_ecr_repository" "ecr-repo" {
 }
 
 /*
-  COMPUTE
+`  COMPUTE
   create the eks cluster using the eks module
   this module is responsible for creating all the relevant components for eks cluster to be up and running.
   1. the elb.
@@ -192,7 +171,6 @@ resource "aws_ecr_repository" "ecr-repo" {
 */
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "14.0.0"
 
   cluster_name    = local.cluster_name
   cluster_version = "1.18"
@@ -227,12 +205,6 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_id
 }
 
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
-}
-
 resource "null_resource" "create-kube-folder" {
   provisioner "local-exec" {
     command = "kubectl get nodes -owide"
@@ -242,13 +214,8 @@ resource "null_resource" "create-kube-folder" {
 # save the kube config file in kube/config file
 resource "local_file" "kubeconfig" {
     content     = module.eks.kubeconfig
-<<<<<<< HEAD
     filename = "~/.kube/config"
     depends_on = [null_resource.create-kube-folder]
-=======
-    filename = "config"
-    depends_on = [module.eks]
->>>>>>> 6168a2ae845e385545f33f2f6fce7b19c8e853ad
 }
 
 # outputing the kube config content to the screen at the end of the provisioning

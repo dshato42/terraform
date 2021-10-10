@@ -1,4 +1,4 @@
 
-env_name = "sela-test"
+env_name = "david"
 region = "us-east-1"
-key_name = "my_ssh_key"
+key_name = "ssh_key"

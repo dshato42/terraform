@@ -9,3 +9,7 @@ variable "env_name" {
   description = "The environment name"
 }
 
+variable "key_name" {
+  type = string
+  description = "the name of the ssh key to attachat to the worker nodes"
+}
